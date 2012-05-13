@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 
 import javax.persistence.Entity;
+import javax.persistence.Id;
 
 import play.db.ebean.Model;
 import utils.fr.jmg.extractor.Main;
@@ -18,11 +19,13 @@ import utils.fr.jmg.extractor.api.Type;
 @Entity
 public class Description extends Model implements Persistable, Serializable {
 
-	public static Finder<Long,Description> find = new Finder(Long.class, Description.class);
+	public static Finder<String,Description> find = new Finder(String.class, Description.class);
 
+	@Id
+	public String url;
 	public BigDecimal price, area;
 	public Type type;
-	public String zipCode, address, city, lattitude, longitude, url, author;
+	public String zipCode, address, city, lattitude, longitude, author;
 	public boolean valid, weekly;
 	public Date creation;
 
@@ -42,69 +45,6 @@ public class Description extends Model implements Persistable, Serializable {
 		this.area = area;
 		this.creation = creation;
 	}
-//
-//	public boolean isWeekly() {
-//		return this.weekly;
-//	}
-//
-//	public String getAuthor() {
-//		return this.author;
-//	}
-//	
-//	public BigDecimal getArea() {
-//		return area;
-//	}
-//
-//	public Date getCreation() {
-//		return creation;
-//	}
-//
-//	public final boolean isValid() {
-//		return this.valid;
-//	}
-//	public final String getAddress() {
-//		return address;
-//	}
-//
-//	public final String getCity() {
-//		return city;
-//	}
-//
-//	public final String getLattitude() {
-//		return lattitude;
-//	}
-//
-//	public final String getLongitude() {
-//		return longitude;
-//	}
-//
-//	public final String getUrl() {
-//		return url;
-//	}
-//
-//	public final String getZipCode() {
-//		return zipCode;
-//	}
-//
-//	public final BigDecimal getPrice() {
-//		return price;
-//	}
-//
-//	public final Type getType() {
-//		return type;
-//	}
-//
-//	public final Provider getProvider() {
-//		String url = getUrl();
-//		if(url != null){
-//			for(Provider provider : Provider.values()){
-//				if(url.contains(provider.name)){
-//					return provider;
-//				}
-//			}
-//		}
-//		return Provider.UNKNOWN;
-//	}
 
 	public String toString() {
 		return url + " " + type + " " + zipCode + " " + price + " " + area;

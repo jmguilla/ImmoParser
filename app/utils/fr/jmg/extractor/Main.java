@@ -60,7 +60,12 @@ public class Main {
 			for(Description description : result.get(type)){
 				try {
 					daoManager.getDAO(description).save(description);
-					description.save();
+					Description previous = null;
+					if((previous = Description.find.byId(description.url)) == null){
+						description.save();
+					}else{
+						System.out.println(previous + " already in db");
+					}
 				} catch (IOException e) {
 					System.err.println("Exception occurred while saving " + description);
 					e.printStackTrace();

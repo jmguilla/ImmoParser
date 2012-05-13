@@ -1,0 +1,14 @@
+@(descriptions: List[models.Description])
+@import helper._
+@main("Descriptions"){
+
+	<h1>@descriptions.size() description(s)</h1>
+	@form(routes.Application.refresh()) {
+                    <input type="submit" value="Refresh">
+                }
+	<ul> 
+	@for(description <- descriptions) {
+	  <li>@description.url</li>
+	} 
+	</ul>
+}
