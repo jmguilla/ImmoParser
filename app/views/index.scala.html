@@ -1,7 +1,15 @@
-@(message: String)
+@* @(message: String)
 
 @main("Welcome to Play 2.0") {
     
     @play20.welcome(message, style = "Java")
     
-}
+} *@
+@(descriptions: List[models.Description])
+@import helper._
+	<h1>@descriptions.size() description(s)</h1>
+	<ul> 
+	@for(description <- descriptions) {
+	  <li>@description.url</li>
+	} 
+	</ul>
