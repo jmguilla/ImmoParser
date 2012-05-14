@@ -6,22 +6,21 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Hashtable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import models.Description;
 
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import utils.fr.jmg.extractor.api.AbstractParser;
+import utils.fr.jmg.extractor.api.DocumentBuilder;
 import utils.fr.jmg.extractor.api.HTMLTags;
 import utils.fr.jmg.extractor.api.Type;
-import utils.fr.jmg.extractor.api.WebParser;
 
-public class LongTermLeBonCoinParser implements WebParser{
+public class LongTermLeBonCoinParser extends AbstractParser{
 
 	protected String BASE_URL = "http://www.leboncoin.fr/locations/offres/";
 	protected static final String URL_VAR_PAGE = "o";
@@ -46,15 +45,9 @@ public class LongTermLeBonCoinParser implements WebParser{
 	protected static final String REGEXP_NB_DATE = "([0-9]+[ ]*[^ ]+)";
 	protected static final String DEFAULT_STRING = "NOT FOUND";
 	protected static final int DEFAULT_PRICE = 1;
-	protected static final int CIRCUIT_BREAKER_PACE = 1000;
-	protected static final int THRESHOLD_INIT = 5;
-	protected int circuitBreakerThreshold = THRESHOLD_INIT;
 
-	/*
-	 * Extracts a description a an announce at the given url
-	 */
 	protected Description extractDescription(String url, Type type, String zipCode, BigDecimal validityThreshold) throws IOException{
-		Document doc = buildDocument(url);
+		Document doc = (new DocumentBuilder()).buildDocument(url);
 		Elements links = doc.select(HTML_ANNOUNCE_DESC);
 		//We found a matching announce
 		//We are first looking for the description of the flat
@@ -149,14 +142,12 @@ public class LongTermLeBonCoinParser implements WebParser{
 		return HTML_ANNOUNCE_PRICE_KEY;
 	}
 
-	/*
-	 * Extract the different addresses of announces on a given page
-	 */
+	@Override
 	protected ArrayList<String> extractAddresses(int nbRooms, String zipCode, int page) throws IOException {
 		ArrayList<String> result = new ArrayList<String>();
 		String url = buildURL(page, nbRooms, zipCode, page);
 		System.out.println("Extracting addresses for url: " + url);
-		Document doc = buildDocument(url);
+		Document doc = (new DocumentBuilder()).buildDocument(url);
 		Elements links = doc.select(HTML_ANNOUNCES_LIST);
 		if(links.size() > 0){
 			for(Element element : links){
@@ -169,32 +160,6 @@ public class LongTermLeBonCoinParser implements WebParser{
 	}
 
 	/*
-	 * Builds the document to the given url
-	 */
-	protected final Document buildDocument(String url) throws IOException{
-		Document doc = null;
-		while(doc == null){
-			try{
-				doc = Jsoup.connect(url).get();
-				circuitBreakerThreshold = THRESHOLD_INIT;
-			}catch(IOException e){
-				if(circuitBreakerThreshold <= 0){
-					throw e;
-				}else{
-					System.err.println(e.getClass() + " caught while processing document building");
-					circuitBreakerThreshold--;
-					try {
-						Thread.sleep(CIRCUIT_BREAKER_PACE);
-					} catch (InterruptedException e1) {
-						throw new IOException(e1);
-					}
-				}
-			}
-		}
-		return doc;
-	}
-
-	/*
 	 * Builds the url for the parsing
 	 */
 	protected String buildURL(int page, int nbRooms, String zipCode, int page2) {
@@ -202,77 +167,4 @@ public class LongTermLeBonCoinParser implements WebParser{
 				"&" + URL_VAR_MAX_ROOMS + "=" + nbRooms + "&" + URL_VAR_ZIPCODE + "=" + zipCode;
 	}
 
-	@Override
-	public final void extractDescriptions(
-			Type inType, String[] zipCodes, BigDecimal validityThreshold,
-			Hashtable<Type, ArrayList<Description>> result,
-			Hashtable<Type, ArrayList<Description>> rejected)
-					throws IOException {
-		//We process every zip codes passed in
-		for(String zipCode : zipCodes){
-			try{
-				//We process every number of rooms
-				if(inType == null){
-					for(Type type : Type.getValidTypes()){
-						populateDescription(type, zipCode, validityThreshold, result, rejected);
-					}
-				}else{
-					populateDescription(inType, zipCode, validityThreshold, result, rejected);
-				}
-				circuitBreakerThreshold = THRESHOLD_INIT;
-			}catch(IOException e){
-				if(circuitBreakerThreshold <= 0){
-					throw e;
-				}else{
-					System.err.println(e.getClass() + " caught while processing document building");
-					circuitBreakerThreshold--;
-					try {
-						Thread.sleep(CIRCUIT_BREAKER_PACE);
-					} catch (InterruptedException e1) {
-						throw new IOException(e1);
-					}
-				}
-			}
-		}
-	}
-
-	/*
-	 * Populates result and rejected thanks to the passed in parameters
-	 */
-	private void populateDescription(
-			Type type, String zipCode, BigDecimal validityThreshold,
-			Hashtable<Type, ArrayList<Description>> result,
-			Hashtable<Type, ArrayList<Description>> rejected) throws IOException{
-		//We first create the resulting list
-		if(result.get(type) == null){
-			result.put(type, new ArrayList<Description>());
-		}
-		if(rejected != null && rejected.get(type) == null){
-			rejected.put(type, new ArrayList<Description>());
-		}
-		//We process every pages
-		for(int pageNumber = 1; pageNumber < Integer.MAX_VALUE; pageNumber++){
-			ArrayList<String> addresses = this.extractAddresses(type.getNbRooms(), zipCode, pageNumber);
-			if(addresses == null || addresses.size() <= 0){
-				break;
-			}
-			for(String address : addresses){
-				System.out.print(address + " ");
-				Description desc = this.extractDescription(address, type, zipCode, validityThreshold);
-				//Either result or reject
-				if(desc != null){
-					//Valid result
-					if(desc.valid){
-						System.out.println("OK Desc " + desc);
-						result.get(desc.type).add(desc);
-					}else{
-						System.out.println("KO Desc " + desc);
-						rejected.get(desc.type).add(desc);
-					}
-				}else{
-					System.out.println("KO URL " + address);
-				}
-			}
-		}
-	}
 }
