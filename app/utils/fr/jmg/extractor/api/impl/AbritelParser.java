@@ -97,6 +97,7 @@ public class AbritelParser extends AbstractParser {
                     //TODO we found the type of good
                 }else if(HTML_ANNOUNCE_PEOPLE_KEY.contains(span.ownText())){
                     try{
+                        //TODO we found the number of people who can live in the appartment
                         nbPeople = Integer.parseInt(link.select(HTMLTags.SPAN.name + HTML_ANNOUNCE_COUNT).first().ownText());
                     }catch(Exception e){
                         System.err.println("Cannot compute number of people for " + address);
@@ -129,7 +130,7 @@ public class AbritelParser extends AbstractParser {
             }
         }
 
-        //The minimum price
+        //The minimum price per week
         try{
             for(Element element : doc.select(HTML_ANNOUNCE_MIN_PRICE_LIST)){
                 String period = element.select(HTMLTags.SPAN.name + HTML_ANNOUNCE_PERIOD).first().ownText();
