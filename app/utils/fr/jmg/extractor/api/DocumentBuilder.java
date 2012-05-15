@@ -20,13 +20,14 @@ public class DocumentBuilder {
 		Document doc = null;
 		while(doc == null){
 			try{
-				doc = Jsoup.connect(url).get();
+				doc = Jsoup.connect(url).followRedirects(false).get();
 				circuitBreakerThreshold = THRESHOLD_INIT;
 			}catch(IOException e){
 				if(circuitBreakerThreshold <= 0){
 					throw e;
 				}else{
 					System.err.println(e.getClass() + " caught while processing document building");
+					e.printStackTrace();
 					circuitBreakerThreshold--;
 					try {
 						Thread.sleep(CIRCUIT_BREAKER_PACE);
@@ -38,5 +39,4 @@ public class DocumentBuilder {
 		}
 		return doc;
 	}
-
 }

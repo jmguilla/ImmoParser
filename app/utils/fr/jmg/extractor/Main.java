@@ -9,7 +9,7 @@ import models.Description;
 import utils.fr.jmg.extractor.api.DAOManager;
 import utils.fr.jmg.extractor.api.Type;
 import utils.fr.jmg.extractor.api.WebParser;
-import utils.fr.jmg.extractor.api.impl.ShortTermLeBonCoinParser;
+import utils.fr.jmg.extractor.api.impl.AbritelParser;
 
 /*
  * Class used to launch the extration process
@@ -24,9 +24,9 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 		long startTime = System.currentTimeMillis();
 		//should be done thanks to injection
-		WebParser[] parsers = new WebParser[]{new ShortTermLeBonCoinParser()/*, new LongTermLeBonCoinParser()*/};
+		WebParser[] parsers = new WebParser[]{new AbritelParser()};
 		//should be done thanks to injection
-		String[] zipCodes = new String[]{"06400"};
+		String[] zipCodes = new String[]{"Cannes"};
 		System.out.print("******************** Starting extraction for ");
 		for(String zipCode : zipCodes){
 			System.out.print(zipCode + " ");
@@ -61,11 +61,11 @@ public class Main {
 				try {
 					daoManager.getDAO(description).save(description);
 					Description previous = null;
-					if((previous = Description.find.byId(description.url)) == null){
-						description.save();
-					}else{
-						System.out.println(previous + " already in db");
-					}
+//					if((previous = Description.find.byId(description.url)) == null){
+//						description.save();
+//					}else{
+//						System.out.println(previous + " already in db");
+//					}
 				} catch (IOException e) {
 					System.err.println("Exception occurred while saving " + description);
 					e.printStackTrace();

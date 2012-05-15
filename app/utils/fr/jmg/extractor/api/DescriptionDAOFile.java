@@ -26,44 +26,43 @@ class DescriptionDAOFile implements DescriptionDAO{
 
 	@Override
 	public void save(Description toSave) throws IOException {
-//		if(toSave.isValid()){
-//			save(toSave, validCache, VALID_DIR_NAME);
-//		}else{
-//			save(toSave, rejectedCache, REJECTED_DIR_NAME);
-//		}
+		if(toSave.valid){
+			save(toSave, validCache, VALID_DIR_NAME);
+		}else{
+			save(toSave, rejectedCache, REJECTED_DIR_NAME);
+		}
 	}
 
 	private void save(Description toSave, final Hashtable<String, Hashtable<Type, OutputStream>> cache, String directory) throws IOException{
-//		Hashtable<Type, OutputStream> tmp = cache.get(toSave.getZipCode());
-//		final String zipCode = (toSave.getZipCode()!=null? toSave.getZipCode():toSave.getCity());
-//		final Type type = toSave.getType();
-//		//creating the cache for that current zip code
-//		if(tmp == null){
-//			tmp = new Hashtable<Type, OutputStream>();
-//			cache.put(zipCode, tmp);
-//		}
-//		OutputStream os = tmp.get(toSave.getType());
-//		//creating the cache for the current type
-//		if(os == null){
-//			File tmpDir = new File(System.getProperty("user.home") + File.separator + ROOT_DIR_NAME + File.separator +
-//					directory + File.separator + timeStamp + File.separator + zipCode);
-//			tmpDir.mkdirs();
-//			File tmpFile = new File(tmpDir, type + ".csv");
-//			os = new FileOutputStream(tmpFile);
-//			tmp.put(toSave.getType(), os);
-//			os.write(("Provider;URL;Type;ZipCode;Price;Address;City;Lattitude;Longitude;Valid;Area;Creation;Author;Weekly" + lf).getBytes());
-//		}
-//		StringBuilder sb = new StringBuilder();
-////		sb.append(toSave.getProvider()); sb.append(";");
-////		sb.append(toSave.getUrl()); sb.append(";"); sb.append(type); sb.append(";");
-////		sb.append(toSave.getZipCode()); sb.append(";"); sb.append(toSave.getPrice()); sb.append(";");
-////		sb.append(toSave.getAddress()); sb.append(";"); sb.append(toSave.getCity()); sb.append(";");
-////		sb.append(toSave.getLattitude()); sb.append(";"); sb.append(toSave.getLongitude()); sb.append(";");
-////		sb.append(toSave.isValid()); sb.append(";"); sb.append(toSave.getArea()); sb.append(";"); sb.append(toSave.getCreation());
-////		sb.append(";"); sb.append(toSave.getAuthor()); sb.append(";"); sb.append(toSave.isWeekly());
-//		sb.append(lf);
-//		os.write(sb.toString().getBytes());
-//		os.flush();		
+		Hashtable<Type, OutputStream> tmp = cache.get(toSave.zipCode);
+		final String zipCode = (toSave.zipCode!=null? toSave.zipCode:toSave.city);
+		final Type type = toSave.type;
+		//creating the cache for that current zip code
+		if(tmp == null){
+			tmp = new Hashtable<Type, OutputStream>();
+			cache.put(zipCode, tmp);
+		}
+		OutputStream os = tmp.get(toSave.type);
+		//creating the cache for the current type
+		if(os == null){
+			File tmpDir = new File(System.getProperty("user.home") + File.separator + ROOT_DIR_NAME + File.separator +
+					directory + File.separator + timeStamp + File.separator + zipCode);
+			tmpDir.mkdirs();
+			File tmpFile = new File(tmpDir, type + ".csv");
+			os = new FileOutputStream(tmpFile);
+			tmp.put(toSave.type, os);
+			os.write(("URL;Type;ZipCode;Price;Address;City;Lattitude;Longitude;Valid;Area;Creation;Author;Weekly" + lf).getBytes());
+		}
+		StringBuilder sb = new StringBuilder();
+		sb.append(toSave.url); sb.append(";"); sb.append(type); sb.append(";");
+		sb.append(toSave.zipCode); sb.append(";"); sb.append(toSave.price); sb.append(";");
+		sb.append(toSave.address); sb.append(";"); sb.append(toSave.city); sb.append(";");
+		sb.append(toSave.latitude); sb.append(";"); sb.append(toSave.longitude); sb.append(";");
+		sb.append(toSave.valid); sb.append(";"); sb.append(toSave.area); sb.append(";"); sb.append(toSave.creation);
+		sb.append(";"); sb.append(toSave.author); sb.append(";"); sb.append(toSave.weekly);
+		sb.append(lf);
+		os.write(sb.toString().getBytes());
+		os.flush();
 	}
 
 	@Override

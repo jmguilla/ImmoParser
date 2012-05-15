@@ -36,6 +36,7 @@ public abstract class AbstractParser implements WebParser{
 					throw e;
 				}else{
 					System.err.println(e.getClass() + " caught while processing document building");
+					e.printStackTrace();
 					circuitBreakerThreshold--;
 					try {
 						Thread.sleep(CIRCUIT_BREAKER_PACE);
@@ -68,7 +69,8 @@ public abstract class AbstractParser implements WebParser{
 				break;
 			}
 			for(String address : addresses){
-				System.out.print(address + " ");
+				System.out.println("************************************************************");
+				System.out.println("Computing " + address);
 				Description desc = this.extractDescription(address, type, zipCode, validityThreshold);
 				//Either result or reject
 				if(desc != null){
