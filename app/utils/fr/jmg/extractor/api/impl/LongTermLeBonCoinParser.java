@@ -133,7 +133,7 @@ public class LongTermLeBonCoinParser extends AbstractParser{
 			if(validityThreshold == null || validityThreshold.compareTo(price) <= 0){
 				valid = true;
 			}
-			return new Description(type, price, zc, null, city, null, null, url, valid, area, creation, author, false);
+			return new Description(type, price, zc, null, city, null, null, null, url, valid, area, creation, author, false);
 		}
 		return null;
 	}

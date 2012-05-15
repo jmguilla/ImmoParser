@@ -24,7 +24,7 @@ public class GoogleGeocodeClient {
     public final JSONObject getReverseGeocodeJson(BigDecimal lat, BigDecimal lng) throws IOException, JSONException{
         JsonBuilder builder = new JsonBuilder();
         URL url = new URL(BASE_URL+PARAM_JSON+"?"+PARAM_LATLNG+lat+","+lng+"&"+PARAM_SENSOR);
-        System.out.println(url);
+        System.out.println("GEOCODE call to " + url.toExternalForm());
         return builder.buildJson(url.toExternalForm());
     }
 
@@ -34,7 +34,7 @@ public class GoogleGeocodeClient {
     public final Document getReverseGeocodeXML(BigDecimal lat, BigDecimal lng) throws IOException{
       DocumentBuilder builder = new DocumentBuilder();
       URL url = new URL(BASE_URL+PARAM_XML+"?"+PARAM_LATLNG+lat+","+lng+"&"+PARAM_SENSOR);
-      System.out.println(url);
+      System.out.println("GEOCODE call to " + url.toExternalForm());
       return builder.buildDocument(url.toExternalForm());
   }
 }

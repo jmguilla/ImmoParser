@@ -25,12 +25,12 @@ public class Description extends Model implements Persistable, Serializable {
 	public String url;
 	public BigDecimal price, area, latitude, longitude;
 	public Type type;
-	public String zipCode, address, city, author;
+	public String zipCode, address, city, author, formattedAddress;
 	public boolean valid, weekly;
 	public Date creation;
 
 	public Description(Type type, BigDecimal price, String cp, String address,
-			String city, BigDecimal latitude, BigDecimal longitude, String url, boolean valid, BigDecimal area, Date creation, String author, boolean weekly) {
+			String city, String formattedAddress, BigDecimal latitude, BigDecimal longitude, String url, boolean valid, BigDecimal area, Date creation, String author, boolean weekly) {
 		this.weekly = weekly;
 		this.author = author;
 		this.price = price;
@@ -44,6 +44,7 @@ public class Description extends Model implements Persistable, Serializable {
 		this.valid = valid;
 		this.area = area;
 		this.creation = creation;
+		this.formattedAddress = formattedAddress;
 	}
 
     public String toString() {

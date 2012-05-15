@@ -10,7 +10,9 @@ import java.util.regex.Pattern;
 
 import models.Description;
 
+import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -37,7 +39,10 @@ public class AbritelParser extends AbstractParser {
     protected static final String HTML_ANNOUNCE_AUTH = "div.inquiry-form-sidebar > h2";
     protected static final String HTML_ANNOUNCE_SUMMARY = "div[id=summary-amenities] > ul > li.summary-list-item";
     protected static final String HTML_ANNOUNCE_AMENITIES = "div[id=amenities-container] > div";
-    protected static final String HTML_ANNOUNCE_MIN_PRICE = "div.summary-list-item > span.rate";
+    protected static final String HTML_ANNOUNCE_MIN_PRICE_LIST = "div.summary-list-item";
+    protected static final String HTML_ANNOUNCE_PERIOD = ".period";
+    protected static final String HTML_ANNOUNCE_WEEK_KEY = "semaine";
+    protected static final String HTML_ANNOUNCE_MIN_PRICE = ".rate";
     protected static final String HTML_ANNOUNCE_MAP = "div.map-box > script";
     protected static final String HTML_ANNOUNCE_TITLE = ".title";
     protected static final String HTML_ANNOUNCE_COUNT = ".count";
@@ -46,6 +51,17 @@ public class AbritelParser extends AbstractParser {
     protected static final String HTML_ANNOUNCE_TYPE_KEY = "Chambres";
     protected static final String HTML_ANNOUNCE_PEOPLE_KEY = "Personnes";
     protected static final String HTML_ANNOUNCE_AREA_KEY = "Superficie:";
+    protected static final String UTF_8 = "UTF-8";
+    protected static final String GEO_STATUS_OK = "OK";
+    protected static final String GEO_STATUS_KEY = "status";
+    protected static final String GEO_RESULTS_KEY = "results";
+    protected static final String GEO_FORMATTED_KEY = "formatted_address";
+    protected static final String GEO_COMPONENTS_KEY = "address_components";
+    protected static final String GEO_ZIP_KEY = "postal_code";
+    protected static final String GEO_ADDRESS_KEY = "route";
+    protected static final String GEO_CITY_KEY = "locality";
+    protected static final String GEO_NAME_KEY = "long_name";
+    protected static final String GEO_TYPE_KEY = "types";
 
 	@Override
 	protected ArrayList<String> extractAddresses(int nbRooms, String zipCode, int page) throws IOException {
@@ -65,9 +81,10 @@ public class AbritelParser extends AbstractParser {
 	}
 
 	@Override
-	protected Description extractDescription(String address, Type type,	String zipCode, BigDecimal validityThreshold) throws IOException {
+	protected Description extractDescription(String address, Type type,	String cityName, BigDecimal validityThreshold) throws IOException {
+	    //TODO doesn't accept zipCode as input but city name...
         BigDecimal price = null, area = null, latitude = null, longitude = null;
-        String city = zipCode, zc = null, author = null;
+        String route = null, city = cityName, zc = null, author = null, formattedAddress = null;
         boolean chargesIncluded = false, valid = false;
         Date creation = null;
         int nbPeople = -1;
@@ -114,14 +131,20 @@ public class AbritelParser extends AbstractParser {
 
         //The minimum price
         try{
-            String tmp = doc.select(HTML_ANNOUNCE_MIN_PRICE).first().ownText();
-            Pattern p = Pattern.compile(REGEXP_PRICE);
-            Matcher matcher = p.matcher(tmp);
-            if(matcher.find()){
-                price = new BigDecimal(matcher.group(1).trim());
-            }
-            if(validityThreshold == null || validityThreshold.compareTo(price) <= 0){
-                valid = true;
+            for(Element element : doc.select(HTML_ANNOUNCE_MIN_PRICE_LIST)){
+                String period = element.select(HTMLTags.SPAN.name + HTML_ANNOUNCE_PERIOD).first().ownText();
+                if(period != null && period.contains(HTML_ANNOUNCE_WEEK_KEY)){
+                    String tmp = element.select(HTMLTags.SPAN.name+HTML_ANNOUNCE_MIN_PRICE).first().ownText();
+                    Pattern p = Pattern.compile(REGEXP_PRICE);
+                    Matcher matcher = p.matcher(tmp);
+                    if(matcher.find()){
+                        price = new BigDecimal(matcher.group(1).trim());
+                        if(validityThreshold == null || validityThreshold.compareTo(price) <= 0){
+                            valid = true;
+                        }
+                        break;
+                    }
+                }
             }
         }catch(Exception e){
             System.err.println("Cannot compute min price for " + address);
@@ -134,15 +157,44 @@ public class AbritelParser extends AbstractParser {
             Pattern p = Pattern.compile(REGEXP_MAPPROPS);
             Matcher matcher = p.matcher(tmp);
             if(matcher.find()){
-                latitude = new BigDecimal(URLDecoder.decode(matcher.group(1), "UTF-8").trim());
-                longitude = new BigDecimal(URLDecoder.decode(matcher.group(2), "UTF-8").trim());
+                latitude = new BigDecimal(URLDecoder.decode(matcher.group(1), UTF_8).trim());
+                longitude = new BigDecimal(URLDecoder.decode(matcher.group(2), UTF_8).trim());
+
+                //We have the lat/lng couple, we can compute the address thx to reverse geocode
+                GoogleGeocodeClient geocodeClient = new GoogleGeocodeClient();
+                JSONObject json = geocodeClient.getReverseGeocodeJson(latitude, longitude);
+                if(GEO_STATUS_OK.equalsIgnoreCase(json.getString(GEO_STATUS_KEY))){
+                    //The result is correct
+                    JSONArray results = json.getJSONArray(GEO_RESULTS_KEY);
+                    //results[0] = route + formatted address
+                    //results[1] = zip code
+                    //results[2] = city
+                    //results[3] = dept
+                    //results[4] = region
+                    //results[5] = country
+                    formattedAddress = results.getJSONObject(0).getString(GEO_FORMATTED_KEY);
+                    JSONArray components = results.getJSONObject(0).getJSONArray(GEO_COMPONENTS_KEY);
+                    for(int i = 0; i<components.length(); i++){
+                        JSONObject component = components.getJSONObject(i);
+                        String typeValue = component.getJSONArray(GEO_TYPE_KEY).getString(0);
+                        if(typeValue != null){
+                            if(typeValue.contains(GEO_ADDRESS_KEY)){
+                                route = component.getString(GEO_NAME_KEY);
+                            }else if(typeValue.contains(GEO_CITY_KEY)){
+                                city = component.getString(GEO_NAME_KEY);
+                            }else if(typeValue.contains(GEO_ZIP_KEY)){
+                                zc = component.getString(GEO_NAME_KEY);
+                            }
+                        }
+                    }
+                }
             }
         }catch(Exception e){
             System.err.println("Cannot compute lat & long for " + address);
             e.printStackTrace();
         }
         
-        return new Description(type, price, zc, null, city, latitude, longitude, address, valid, area, creation, author, false);
+        return new Description(type, price, zc, route, city, formattedAddress, latitude, longitude, address, valid, area, creation, author, false);
     }
 
 	/*
@@ -166,8 +218,14 @@ public class AbritelParser extends AbstractParser {
 	 */
 	public static void main(String[] args) throws IOException, JSONException {
 		AbritelParser parser = new AbritelParser();
-		Description desc = parser.extractDescription("http://localhost:8080/test/announce-abritel-st.html", Type.STUDIO, "cannes", new BigDecimal(100));
-		System.out.println((new GoogleGeocodeClient().getReverseGeocodeJson(desc.latitude, desc.longitude)));
-        System.out.println((new GoogleGeocodeClient().getReverseGeocodeXML(desc.latitude, desc.longitude)));
+		Description desc = parser.extractDescription("http://www.abritel.fr/location-vacances/p872693a", Type.STUDIO, "cannes", new BigDecimal(100));
+		System.out.println(desc);
+		System.out.println(desc.address);
+		System.out.println(desc.zipCode);
+		System.out.println(desc.city);
+		System.out.println(desc.latitude);
+		System.out.println(desc.longitude);
+		System.out.println(desc.formattedAddress);
+		System.out.println(desc.price);
 	}
 }
