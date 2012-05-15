@@ -5,7 +5,6 @@ import java.math.BigDecimal;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -63,12 +62,9 @@ public class AbritelParser extends AbstractParser {
 	protected static final String GEO_CITY_KEY = "locality";
 	protected static final String GEO_NAME_KEY = "long_name";
 	protected static final String GEO_TYPE_KEY = "types";
-	private static final int CIRCUIT_BREAKER_PACE = 1000;
+	private static final int CIRCUIT_BREAKER_PACE = 1500;
 	private static final int THRESHOLD_INIT = 5;
 	private int circuitBreakerThreshold = THRESHOLD_INIT;
-	private static long LAST_GEOCODE_CALL = System.currentTimeMillis();
-	private static final long GEOCODE_TEMPO_PACE = 1500;
-	private static final ReentrantLock GEOCODE_LOCL = new ReentrantLock();
 
 	@Override
 	protected ArrayList<String> extractAddresses(int nbRooms, String zipCode, int page) throws IOException {
@@ -174,17 +170,7 @@ public class AbritelParser extends AbstractParser {
 				//We have the lat/lng couple, we can compute the address thx to reverse geocode
 				GoogleGeocodeClient geocodeClient = new GoogleGeocodeClient();
 				while(true){
-					JSONObject json = null;
-					//Tempo
-					synchronized (GEOCODE_LOCL) {
-						long tempo = System.currentTimeMillis() - LAST_GEOCODE_CALL - GEOCODE_TEMPO_PACE;
-						if(tempo > 0){
-							System.out.println("Tempo for geocode: " + tempo);
-							Thread.sleep(tempo);
-						}
-						json = geocodeClient.getReverseGeocodeJson(latitude, longitude);
-						LAST_GEOCODE_CALL = System.currentTimeMillis();
-					}
+					JSONObject json = geocodeClient.getReverseGeocodeJson(latitude, longitude);
 					if(GEO_STATUS_OK.equalsIgnoreCase(json.getString(GEO_STATUS_KEY))){
 						//The result is correct
 						JSONArray results = json.getJSONArray(GEO_RESULTS_KEY);
@@ -198,7 +184,6 @@ public class AbritelParser extends AbstractParser {
 						formattedAddress = results.getJSONObject(0).getString(GEO_FORMATTED_KEY);
 						for(int i = 0; i<components.length(); i++){
 							JSONObject component = components.getJSONObject(i);
-							System.out.println(component);
 							String typeValue = component.getJSONArray(GEO_TYPE_KEY).getString(0);
 							if(typeValue != null){
 								if(typeValue.contains(GEO_ADDRESS_KEY)){
@@ -221,7 +206,7 @@ public class AbritelParser extends AbstractParser {
 							System.err.println("Reverse geocode result (circuit broker): " + json.getString(GEO_STATUS_KEY));
 							circuitBreakerThreshold--;
 							try {
-								Thread.sleep(GEOCODE_TEMPO_PACE);
+								Thread.sleep(CIRCUIT_BREAKER_PACE);
 							} catch (InterruptedException e1) {
 								throw new IOException(e1);
 							}
