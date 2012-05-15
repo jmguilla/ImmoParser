@@ -10,12 +10,14 @@ import java.util.regex.Pattern;
 
 import models.Description;
 
+import org.json.JSONException;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import utils.fr.jmg.extractor.api.AbstractParser;
 import utils.fr.jmg.extractor.api.DocumentBuilder;
+import utils.fr.jmg.extractor.api.GoogleGeocodeClient;
 import utils.fr.jmg.extractor.api.HTMLTags;
 import utils.fr.jmg.extractor.api.Type;
 
@@ -160,10 +162,12 @@ public class AbritelParser extends AbstractParser {
 	/**
 	 * @param args
 	 * @throws IOException 
+	 * @throws JSONException 
 	 */
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, JSONException {
 		AbritelParser parser = new AbritelParser();
 		Description desc = parser.extractDescription("http://localhost:8080/test/announce-abritel-st.html", Type.STUDIO, "cannes", new BigDecimal(100));
-		System.out.println(desc);
+		System.out.println((new GoogleGeocodeClient().getReverseGeocodeJson(desc.latitude, desc.longitude)));
+        System.out.println((new GoogleGeocodeClient().getReverseGeocodeXML(desc.latitude, desc.longitude)));
 	}
 }

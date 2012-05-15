@@ -7,9 +7,9 @@ import org.jsoup.nodes.Document;
 
 public class DocumentBuilder {
 
-	protected static final int CIRCUIT_BREAKER_PACE = 1000;
-	protected static final int THRESHOLD_INIT = 5;
-	protected int circuitBreakerThreshold = THRESHOLD_INIT;
+	private static final int CIRCUIT_BREAKER_PACE = 1000;
+	private static final int THRESHOLD_INIT = 5;
+	private int circuitBreakerThreshold = THRESHOLD_INIT;
 
 	public DocumentBuilder(){}
 
