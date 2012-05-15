@@ -19,18 +19,18 @@ import utils.fr.jmg.extractor.api.Type;
 @Entity
 public class Description extends Model implements Persistable, Serializable {
 
-	public static Finder<String,Description> find = new Finder(String.class, Description.class);
+	public static Finder<String, Description> find = new Finder(String.class, Description.class);
 
 	@Id
 	public String url;
-	public BigDecimal price, area;
+	public BigDecimal price, area, latitude, longitude;
 	public Type type;
-	public String zipCode, address, city, lattitude, longitude, author;
+	public String zipCode, address, city, author;
 	public boolean valid, weekly;
 	public Date creation;
 
 	public Description(Type type, BigDecimal price, String cp, String address,
-			String city, String lat, String lon, String url, boolean valid, BigDecimal area, Date creation, String author, boolean weekly) {
+			String city, BigDecimal latitude, BigDecimal longitude, String url, boolean valid, BigDecimal area, Date creation, String author, boolean weekly) {
 		this.weekly = weekly;
 		this.author = author;
 		this.price = price;
@@ -39,14 +39,14 @@ public class Description extends Model implements Persistable, Serializable {
 		this.url = url;
 		this.address = address;
 		this.city = city;
-		this.lattitude = lat;
-		this.longitude = lon;
+		this.latitude = latitude;
+		this.longitude = longitude;
 		this.valid = valid;
 		this.area = area;
 		this.creation = creation;
 	}
 
-	public String toString() {
+    public String toString() {
 		return url + " " + type + " " + zipCode + " " + price + " " + area;
 	}
 
