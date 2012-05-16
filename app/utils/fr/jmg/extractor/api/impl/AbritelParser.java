@@ -2,9 +2,13 @@ package utils.fr.jmg.extractor.api.impl;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URLDecoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Hashtable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,7 +37,7 @@ public class AbritelParser extends AbstractParser {
     public static final String URL_VAR_TYPE = "type+location:appartement";
     public static final String URL_VAR_PAGE = "page";
     public static final String URL_VAR_STUDIO = "studio";
-    protected static final String REGEXP_PRICE = "([0-9 ]+,*[ 0-9]*)";
+    protected static final String REGEXP_PRICE = "([ 0-9]+,*[ 0-9]*)";
     protected static final String HTML_ANNOUNCE_MAPPROP_KEY = "ha.map.property.init";
     protected static final String REGEXP_MAPPROPS = HTML_ANNOUNCE_MAPPROP_KEY
             + "\\(\\{location: \\[\\{a:'([^']+)', b:'([^']+)'";
@@ -42,7 +46,10 @@ public class AbritelParser extends AbstractParser {
     protected static final String HTML_ANNOUNCE_AUTH2 = "div.contact-info > h3";
     protected static final String HTML_ANNOUNCE_SUMMARY = "div[id=summary-amenities] > ul > li.summary-list-item";
     protected static final String HTML_ANNOUNCE_AMENITIES = "div[id=amenities-container] > div";
-    protected static final String HTML_ANNOUNCE_MIN_PRICE_LIST = "div.summary-list-item";
+    protected static final String HTML_ANNOUNCE_PRICE_TAB = "tbody.ratesBody > tr";
+    protected static final String HTML_ANNOUNCE_PERIOD_BEGIN = "td.periodBegin";
+    protected static final String HTML_ANNOUNCE_PERIOD_END = "td.periodEnd";
+    protected static final String HTML_ANNOUNCE_EXCHANGE = "td.exchange";
     protected static final String HTML_ANNOUNCE_PERIOD = ".period";
     protected static final String HTML_ANNOUNCE_WEEK_KEY = "semaine";
     protected static final String HTML_ANNOUNCE_MIN_PRICE = ".rate";
@@ -68,6 +75,7 @@ public class AbritelParser extends AbstractParser {
     private static final int CIRCUIT_BREAKER_PACE = 1500;
     private static final int THRESHOLD_INIT = 5;
     private int circuitBreakerThreshold = THRESHOLD_INIT;
+    private static final String DATE_FORMAT = "dd MMMMM yyyy";
 
     @Override
     protected ArrayList<String> extractAddresses(int nbRooms, String zipCode,
@@ -97,7 +105,9 @@ public class AbritelParser extends AbstractParser {
         Date creation = null;
         int nbPeople = -1;
         Document doc = (new DocumentBuilder()).buildDocument(address);
-        // First, we look for the type of flat and the number of people
+        //***********************************************************************//
+        //                      Type of flat, nb people                          //
+        //***********************************************************************//
         Elements links = doc.select(HTML_ANNOUNCE_SUMMARY);
         for (Element link : links) {
             for (Element span : link.select(HTMLTags.SPAN.name
@@ -111,18 +121,20 @@ public class AbritelParser extends AbstractParser {
                         nbPeople = Integer.parseInt(link
                                 .select(HTMLTags.SPAN.name
                                         + HTML_ANNOUNCE_COUNT).first()
-                                .ownText());
+                                        .ownText());
                     } catch (Exception e) {
                         System.err
-                                .println("Cannot compute number of people for "
-                                        + address);
+                        .println("Cannot compute number of people for "
+                                + address);
                         e.printStackTrace();
                     }
                 }
             }
         }
 
-        // Then, the author
+        //***********************************************************************//
+        //                                Author                                 //
+        //***********************************************************************//
         try {
             author = doc.select(HTML_ANNOUNCE_AUTH).first().ownText();
         } catch (Exception e) {
@@ -130,7 +142,7 @@ public class AbritelParser extends AbstractParser {
             System.out.println("Fallback behavior for author computation for: "
                     + address);
             try {
-                author = doc.select(HTML_ANNOUNCE_AUTH).first().ownText();
+                author = doc.select(HTML_ANNOUNCE_AUTH2).first().ownText();
             } catch (Exception eBis) {
                 System.err.println("Cannot compute author for " + address);
                 e.printStackTrace();
@@ -138,7 +150,9 @@ public class AbritelParser extends AbstractParser {
             }
         }
 
-        // Now the area
+        //***********************************************************************//
+        //                                 Area                                  //
+        //***********************************************************************//
         links = doc.select(HTML_ANNOUNCE_AMENITIES);
         for (Element link : links) {
             for (Element span : link.select(HTMLTags.SPAN.name
@@ -157,37 +171,61 @@ public class AbritelParser extends AbstractParser {
             }
         }
 
-        // The minimum price per week
+        //***********************************************************************//
+        //                  The minimum price wreathed                           //
+        //***********************************************************************//
         try {
-            for (Element element : doc.select(HTML_ANNOUNCE_MIN_PRICE_LIST)) {
-                String period = element
-                        .select(HTMLTags.SPAN.name + HTML_ANNOUNCE_PERIOD)
-                        .first().ownText();
-                if (period != null && period.contains(HTML_ANNOUNCE_WEEK_KEY)) {
-                    String tmp = element
-                            .select(HTMLTags.SPAN.name
-                                    + HTML_ANNOUNCE_MIN_PRICE).first()
-                            .ownText();
+            Hashtable<Rate, ArrayList<String>> rates = new Hashtable<Rate, ArrayList<String>>();
+            for (Element element : doc.select(HTML_ANNOUNCE_PRICE_TAB)) {
+                String begin = null, end = null;
+                Rate rate = null;
+                BigDecimal bg = null;
+                //The beginning of the period
+                Element beginning = element.select(HTML_ANNOUNCE_PERIOD_BEGIN).first();
+                if(beginning == null){
+                    throw new Exception("Missing tag " + HTML_ANNOUNCE_PERIOD_BEGIN);
+                }else{
+                    begin = beginning.ownText();
+                }
+
+                //The ending of the period
+                Element ending = element.select(HTML_ANNOUNCE_PERIOD_END).first();
+                if(ending == null){
+                    throw new Exception("Missing tag " + HTML_ANNOUNCE_PERIOD_END);
+                }else{
+                    end = ending.ownText();
+                }
+
+                //The price
+                Elements exchanges = element.select(HTML_ANNOUNCE_EXCHANGE);
+                for(int i = 0;i < exchanges.size(); i++){
                     Pattern p = Pattern.compile(REGEXP_PRICE);
-                    Matcher matcher = p.matcher(tmp);
+                    //replaces non-breaking spaces in text
+                    Matcher matcher = p.matcher(exchanges.get(i).ownText().replace(new Character((char)0x00A0).toString(), ""));
                     if (matcher.find()) {
-                        // TODO fallback if not available
-                        // either nuitee * 7 or see in tarif onglet
-                        price = new BigDecimal(matcher.group(1).trim());
-                        if (validityThreshold == null
-                                || validityThreshold.compareTo(price) <= 0) {
-                            valid = true;
+                        bg = new BigDecimal(matcher.group(1).trim());
+                        if(i == 0){
+                            rate = new Rate(Rate.Type.SEMAINE, bg);
+                        }else{
+                            rate = new Rate(Rate.Type.NUITE, bg);
                         }
+                        ArrayList<String> tmp = new ArrayList<String>();
+                        tmp.add(begin);
+                        tmp.add(end);
+                        rates.put(rate, tmp);
                         break;
                     }
                 }
             }
+            price = computeWreathedPrice(rates);
         } catch (Exception e) {
-            System.err.println("Cannot compute min price for " + address);
+            System.err.println("Cannot compute wreathed price for " + address);
             e.printStackTrace();
         }
 
-        // The longitude & latitude
+        //***********************************************************************//
+        //                        Latitude & Longitude                           //
+        //***********************************************************************//
         try {
             String tmp = doc.select(HTML_ANNOUNCE_MAP).first().data();
             Pattern p = Pattern.compile(REGEXP_MAPPROPS);
@@ -238,13 +276,13 @@ public class AbritelParser extends AbstractParser {
                         if (circuitBreakerThreshold <= 0) {
                             circuitBreakerThreshold = THRESHOLD_INIT;
                             System.err
-                                    .println("Cannot compute reverse geocode: "
-                                            + json.getString(GEO_STATUS_KEY));
+                            .println("Cannot compute reverse geocode: "
+                                    + json.getString(GEO_STATUS_KEY));
                             break;
                         } else {
                             System.err
-                                    .println("Reverse geocode result (circuit broker): "
-                                            + json.getString(GEO_STATUS_KEY));
+                            .println("Reverse geocode result (circuit broker): "
+                                    + json.getString(GEO_STATUS_KEY));
                             circuitBreakerThreshold--;
                             try {
                                 Thread.sleep(CIRCUIT_BREAKER_PACE);
@@ -263,6 +301,42 @@ public class AbritelParser extends AbstractParser {
         return new Description(type, price, zc, route, city, formattedAddress,
                 latitude, longitude, address, valid, area, creation, author,
                 false);
+    }
+
+    /*
+     * Compute the wreathed price for an annouce
+     */
+    private BigDecimal computeWreathedPrice(Hashtable<Rate, ArrayList<String>> rates) {
+        BigDecimal result = new BigDecimal(0);
+        int nbDays = 0;
+        for(Rate rate : rates.keySet()){
+            BigDecimal tmpRate = null;
+            ArrayList<String> dates = rates.get(rate);
+            if(dates.size() < 2) continue;
+            String begin = dates.get(0), end = dates.get(1);
+            SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
+            Date beginning, ending;
+            try {
+                beginning = sdf.parse(begin);
+                ending = sdf.parse(end);
+            } catch (ParseException e) {
+                System.err.println("Cannot compute date for rate: " + rate.rate + " - " + begin + " - " + end);
+                e.printStackTrace();
+                continue;
+            }
+            if(rate.type == Rate.Type.SEMAINE){
+                tmpRate = rate.rate.divide(new BigDecimal(7), RoundingMode.HALF_UP);
+            }else{
+                tmpRate = rate.rate;
+            }
+            long difference = (ending.getTime() - beginning.getTime()) / 1000 / 60 / 60 / 24;
+            result = result.add(tmpRate.multiply(new BigDecimal(difference)));
+            nbDays += difference;
+        }
+        if(nbDays != 0){
+            return result.divide(new BigDecimal(nbDays), RoundingMode.HALF_UP);
+        }
+        return result; 
     }
 
     /*
@@ -294,9 +368,10 @@ public class AbritelParser extends AbstractParser {
         // parser.extractDescription("http://www.abritel.fr/location-vacances/p872693a",
         // Type.STUDIO, "cannes", new BigDecimal(100));
         Description desc = parser.extractDescription(
-                "http://www.abritel.fr/location-vacances/p1012532a",
+                "http://www.abritel.fr/location-vacances/p662592",
                 Type.STUDIO, "cannes", new BigDecimal(100));
         System.out.println(desc);
+        System.out.println(desc.author);
         System.out.println(desc.address);
         System.out.println(desc.zipCode);
         System.out.println(desc.city);
@@ -304,5 +379,21 @@ public class AbritelParser extends AbstractParser {
         System.out.println(desc.longitude);
         System.out.println(desc.formattedAddress);
         System.out.println(desc.price);
+    }
+
+    /*
+     * Private nested class for rate computation purposes
+     */
+    private static class Rate{
+        static enum Type{
+            NUITE, SEMAINE;
+        }
+
+        private final Type type;
+        private final BigDecimal rate;
+        Rate(Type type, BigDecimal rate){
+            this.type = type;
+            this.rate = rate;
+        }
     }
 }
