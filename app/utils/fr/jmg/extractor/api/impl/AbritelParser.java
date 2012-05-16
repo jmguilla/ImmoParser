@@ -37,6 +37,7 @@ public class AbritelParser extends AbstractParser {
 	protected static final String REGEXP_MAPPROPS = HTML_ANNOUNCE_MAPPROP_KEY + "\\(\\{location: \\[\\{a:'([^']+)', b:'([^']+)'";
 	protected static final String HTML_ANNOUNCES_LIST = "h3.listing-title > a";
 	protected static final String HTML_ANNOUNCE_AUTH = "div.inquiry-form-sidebar > h2";
+	protected static final String HTML_ANNOUNCE_AUTH2 = "div.contact-info > h3";
 	protected static final String HTML_ANNOUNCE_SUMMARY = "div[id=summary-amenities] > ul > li.summary-list-item";
 	protected static final String HTML_ANNOUNCE_AMENITIES = "div[id=amenities-container] > div";
 	protected static final String HTML_ANNOUNCE_MIN_PRICE_LIST = "div.summary-list-item";
@@ -112,11 +113,17 @@ public class AbritelParser extends AbstractParser {
 
 		//Then, the author
 		try{
-			//TODO fallback http://www.abritel.fr/location-vacances/p109695t
 			author = doc.select(HTML_ANNOUNCE_AUTH).first().ownText();
 		}catch(Exception e){
-			System.err.println("Cannot compute author for " + address);
-			e.printStackTrace();
+		    //fallback http://www.abritel.fr/location-vacances/p109695t
+		    System.out.println("Fallback behavior for author computation for: " + address);
+		    try{
+		        author = doc.select(HTML_ANNOUNCE_AUTH).first().ownText();
+		    }catch(Exception eBis){
+    			System.err.println("Cannot compute author for " + address);
+    			e.printStackTrace();
+    			eBis.printStackTrace();
+		    }
 		}
 
 		//Now the area
