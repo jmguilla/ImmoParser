@@ -19,7 +19,7 @@ public class GoogleGeocodeClient {
     private static final String PARAM_JSON = "json";
     private static final String PARAM_XML = "xml";
     private static long LAST_GEOCODE_CALL = System.currentTimeMillis();
-    private static final long GEOCODE_TEMPO_PACE = 1500;
+    private static final long GEOCODE_TEMPO_PACE = 2000;
     private static final ReentrantLock GEOCODE_LOCL = new ReentrantLock();
 
     /*

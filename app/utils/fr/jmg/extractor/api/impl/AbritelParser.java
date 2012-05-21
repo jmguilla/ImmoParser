@@ -72,7 +72,7 @@ public class AbritelParser extends AbstractParser {
     protected static final String GEO_CITY_KEY = "locality";
     protected static final String GEO_NAME_KEY = "long_name";
     protected static final String GEO_TYPE_KEY = "types";
-    private static final int CIRCUIT_BREAKER_PACE = 1500;
+    private static final int CIRCUIT_BREAKER_PACE = 2000;
     private static final int THRESHOLD_INIT = 5;
     private int circuitBreakerThreshold = THRESHOLD_INIT;
     private static final String DATE_FORMAT = "dd MMMMM yyyy";
@@ -215,9 +215,13 @@ public class AbritelParser extends AbstractParser {
                         rates.put(rate, tmp);
                         break;
                     }
+                    if(i >= 4) break;//end of week/nuitee period
                 }
             }
             price = computeWreathedPrice(rates);
+            if(validityThreshold == null || price.compareTo(validityThreshold) >= 0){
+            	valid = true;
+            }
         } catch (Exception e) {
             System.err.println("Cannot compute wreathed price for " + address);
             e.printStackTrace();
