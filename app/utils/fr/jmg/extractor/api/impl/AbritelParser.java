@@ -304,7 +304,7 @@ public class AbritelParser extends AbstractParser {
 
         return new Description(type, price, zc, route, city, formattedAddress,
                 latitude, longitude, address, valid, area, creation, author,
-                false);
+                false, nbPeople);
     }
 
     /*

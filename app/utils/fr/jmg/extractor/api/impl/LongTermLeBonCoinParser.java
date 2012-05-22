@@ -153,7 +153,7 @@ public class LongTermLeBonCoinParser extends AbstractParser {
                 valid = true;
             }
             return new Description(type, price, zc, null, city, null, null,
-                    null, url, valid, area, creation, author, false);
+                    null, url, valid, area, creation, author, false, -1);
         }
         return null;
     }

@@ -9,8 +9,8 @@ import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
+import main.Extraction;
 import play.db.ebean.Model;
-import utils.fr.jmg.extractor.Main;
 import utils.fr.jmg.extractor.api.Persistable;
 import utils.fr.jmg.extractor.api.Type;
 
@@ -29,12 +29,14 @@ public class Description extends Model implements Persistable, Serializable {
     public Type type;
     public String zipCode, address, city, author, formattedAddress;
     public boolean valid, weekly;
+    public int nbPeople;
     public Date creation;
 
     public Description(Type type, BigDecimal price, String cp, String address,
             String city, String formattedAddress, BigDecimal latitude,
             BigDecimal longitude, String url, boolean valid, BigDecimal area,
-            Date creation, String author, boolean weekly) {
+            Date creation, String author, boolean weekly, int nbPeople) {
+    	this.nbPeople = nbPeople;
         this.weekly = weekly;
         this.author = author;
         this.price = price;
@@ -60,6 +62,6 @@ public class Description extends Model implements Persistable, Serializable {
     }
 
     public static void _refresh() throws IOException {
-        Main.main(null);
+        Extraction.main(null);
     }
 }

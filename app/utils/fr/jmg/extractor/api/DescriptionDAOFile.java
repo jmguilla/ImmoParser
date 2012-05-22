@@ -54,7 +54,7 @@ class DescriptionDAOFile implements DescriptionDAO {
             File tmpFile = new File(tmpDir, type + ".csv");
             os = new FileOutputStream(tmpFile);
             tmp.put(toSave.type, os);
-            os.write(("URL;Type;ZipCode;Price;Address;City;Lattitude;Longitude;Valid;Area;Creation;Author;Weekly" + lf)
+            os.write(("URL;Type;ZipCode;Price;Address;City;Lattitude;Longitude;Valid;Area;Creation;Author;Weekly;NBPeople" + lf)
                     .getBytes());
         }
         StringBuilder sb = new StringBuilder();
@@ -83,6 +83,8 @@ class DescriptionDAOFile implements DescriptionDAO {
         sb.append(toSave.author);
         sb.append(";");
         sb.append(toSave.weekly);
+        sb.append(";");
+        sb.append(toSave.nbPeople);
         sb.append(lf);
         os.write(sb.toString().getBytes());
         os.flush();
