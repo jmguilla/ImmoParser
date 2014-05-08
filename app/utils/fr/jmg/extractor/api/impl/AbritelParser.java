@@ -9,6 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Hashtable;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -75,7 +76,7 @@ public class AbritelParser extends AbstractParser {
     private static final int CIRCUIT_BREAKER_PACE = 2000;
     private static final int THRESHOLD_INIT = 5;
     private int circuitBreakerThreshold = THRESHOLD_INIT;
-    private static final String DATE_FORMAT = "dd MMMMM yyyy";
+    private static final String DATE_FORMAT = "dd MMM yyyy";
 
     @Override
     protected ArrayList<String> extractAddresses(int nbRooms, String zipCode,
@@ -218,7 +219,7 @@ public class AbritelParser extends AbstractParser {
                     if(i >= 4) break;//end of week/nuitee period
                 }
             }
-            price = computeWreathedPrice(rates);
+            price = computeWreathedPrice(rates).divide(new BigDecimal(nbPeople), RoundingMode.HALF_UP);
             if(validityThreshold == null || price.compareTo(validityThreshold) >= 0){
             	valid = true;
             }
@@ -318,7 +319,7 @@ public class AbritelParser extends AbstractParser {
             ArrayList<String> dates = rates.get(rate);
             if(dates.size() < 2) continue;
             String begin = dates.get(0), end = dates.get(1);
-            SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
+            SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH);
             Date beginning, ending;
             try {
                 beginning = sdf.parse(begin);

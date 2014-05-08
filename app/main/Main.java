@@ -28,13 +28,13 @@ public class Main {
 	 */
 	public static void main(String[] args) throws FileNotFoundException {
 		ListParameterization params = new ListParameterization();
-	    params.addParameter(FileBasedDatabaseConnection.INPUT_ID, "C:\\Users\\jmguilla\\extraction\\valid\\1337708464586\\aaelki.csv");
-	    params.addParameter(KMeans.K_ID, 5);
+	    params.addParameter(FileBasedDatabaseConnection.INPUT_ID, "C:\\Users\\jmguilla\\extraction\\valid\\1338638844644\\06400\\STUDIO.csv");
+	    params.addParameter(KMeans.K_ID, 3);
 	    params.addParameter(KMeans.SEED_ID, 1);
 	    params.addParameter(KMeans.MAXITER_ID, 1000);
 	    params.addParameter(AbstractParser.COLUMN_SEPARATOR_ID, ";");
 	    params.addParameter(AbstractParser.QUOTE_ID, AbstractParser.QUOTE_CHAR);
-	    params.addParameter(NumberVectorLabelParser.LABEL_INDICES_ID, Arrays.asList(new Integer[]{0,1,4,5,6,7,8,9,10,11}));
+	    params.addParameter(NumberVectorLabelParser.LABEL_INDICES_ID, Arrays.asList(new Integer[]{0,1,2,3,4,8,9,10,11,12,13}));
 
 	    UpdatableDatabase db = ClassGenericsUtil.parameterizeOrAbort(HashmapDatabase.class, params);
 	    params.failOnErrors();

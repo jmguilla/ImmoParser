@@ -16,7 +16,7 @@ import utils.fr.jmg.extractor.api.impl.AbritelParser;
  */
 public class Extraction {
 
-    private static final int VALIDITY_THRESHOLD = 50;
+    private static final int VALIDITY_THRESHOLD = 5;
 
     /*
      * main method to launch the extraction process
@@ -26,7 +26,7 @@ public class Extraction {
         // should be done thanks to injection
         WebParser[] parsers = new WebParser[] { new AbritelParser() };
         // should be done thanks to injection
-        String[] zipCodes = new String[] { "Paris" };
+        String[] zipCodes = new String[] { "Cannes" };
         System.out.print("******************** Starting extraction for ");
         for (String zipCode : zipCodes) {
             System.out.print(zipCode + " ");

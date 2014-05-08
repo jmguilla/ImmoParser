@@ -64,8 +64,6 @@ class DescriptionDAOFile implements DescriptionDAO {
         sb.append(";");
         sb.append(toSave.zipCode);
         sb.append(";");
-        sb.append(toSave.price);
-        sb.append(";");
         sb.append(toSave.address);
         sb.append(";");
         sb.append(toSave.city);
@@ -73,6 +71,8 @@ class DescriptionDAOFile implements DescriptionDAO {
         sb.append(toSave.latitude);
         sb.append(";");
         sb.append(toSave.longitude);
+        sb.append(";");
+        sb.append(toSave.price);
         sb.append(";");
         sb.append(toSave.valid);
         sb.append(";");
